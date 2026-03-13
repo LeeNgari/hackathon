@@ -32,21 +32,21 @@ export function AppSidebar() {
   const [location] = useLocation();
 
   return (
-    <Sidebar className="border-r border-slate-200">
-      <SidebarHeader className="p-4 flex flex-row items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-          <Hexagon className="w-5 h-5 fill-current" />
+    <Sidebar className="border-r-2 border-border bg-background">
+      <SidebarHeader className="p-4 flex flex-row items-center gap-2 border-b-2 border-border mb-4 pb-6">
+        <div className="w-8 h-8 flex items-center justify-center text-primary">
+          <Hexagon className="w-6 h-6 fill-current" />
         </div>
-        <span className="font-display font-bold text-xl tracking-tight text-primary">Fieldwork</span>
+        <span className="font-display font-bold text-xl tracking-tight text-foreground">Fieldwork</span>
       </SidebarHeader>
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <SidebarGroupLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
             Overview
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-2 px-2">
               {navItems.map((item) => {
                 const isActive = location === item.url;
                 return (
@@ -54,7 +54,7 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive}
-                      className={isActive ? "bg-slate-100 font-medium text-primary" : "text-slate-600 hover:text-primary"}
+                      className={isActive ? "bg-secondary font-bold text-primary border-2 border-border shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] h-10" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 font-bold h-10 border-2 border-transparent hover:border-border transition-all"}
                     >
                       <Link href={item.url}>
                         <item.icon className="w-5 h-5" />
@@ -69,10 +69,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 border-t-2 border-border mt-auto">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="text-slate-500 hover:text-destructive">
+            <SidebarMenuButton asChild className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 font-bold h-10 border-2 border-transparent hover:border-destructive/30 transition-all">
               <Link href="/login">
                 <LogOut className="w-5 h-5" />
                 <span>Sign Out</span>

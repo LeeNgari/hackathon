@@ -29,6 +29,7 @@ import InstructorCourses from "@/pages/instructor/courses";
 import InstructorStudents from "@/pages/instructor/students";
 import InstructorTickets from "@/pages/instructor/tickets";
 import InstructorEarnings from "@/pages/instructor/earnings";
+import IDE from "./pages/editor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/courses/:courseId/ticket/:ticketId" component={TicketView} />
       <Route path="/profile" component={Profile} />
       <Route path="/streaks" component={Streaks} />
+      <Route path="/editor" component={IDE}/>
 
       {/* Admin */}
       <Route path="/admin/dashboard" component={AdminDashboard} />

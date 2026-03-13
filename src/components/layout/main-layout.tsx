@@ -16,13 +16,13 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex h-screen w-full bg-background overflow-hidden">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center h-14 px-4 border-b border-border bg-white shrink-0 z-10">
-            <SidebarTrigger data-testid="button-sidebar-toggle" className="mr-4 hover:bg-slate-100" />
+          <header className="flex items-center h-14 px-4 border-b border-border bg-background shrink-0 z-10">
+            <SidebarTrigger data-testid="button-sidebar-toggle" className="mr-4 hover:bg-secondary text-foreground" />
             <div className="ml-auto flex items-center gap-4">
               {/* Optional header actions can go here */}
             </div>
           </header>
-          <main className="flex-1 overflow-auto bg-slate-50">
+          <main className="flex-1 overflow-auto bg-background">
             {children}
           </main>
         </div>
