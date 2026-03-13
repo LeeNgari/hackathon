@@ -17,6 +17,7 @@ import TicketView from "@/pages/ticket-view";
 import Profile from "@/pages/profile";
 import Streaks from "@/pages/streaks";
 import IDE from "./pages/editor";
+import Lesson from "./pages/lesson";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -91,6 +92,10 @@ function Router() {
 
       <Route path="/editor">
         <ProtectedRoute component={IDE} allowedRoles={["student"]} />
+      </Route>
+
+      <Route path="/lesson">
+        <ProtectedRoute component={Lesson} allowedRoles={["student"]} />
       </Route>
 
       {/* Admin */}
