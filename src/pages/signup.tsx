@@ -1,57 +1,59 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Hexagon, ArrowRight } from "lucide-react";
+import { Hexagon, ArrowRight, User as UserIcon, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
-export default function Login() {
+export default function Signup() {
   const [, setLocation] = useLocation();
-  const { user, role, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  useEffect(() => {
-    // If user is already logged in, redirect them based on their role
-    if (!authLoading && user) {
-      if (role === 'admin') setLocation('/admin/dashboard');
-      else if (role === 'instructor') setLocation('/instructor/dashboard');
-      else setLocation('/dashboard');
-    }
-  }, [user, role, authLoading, setLocation]);
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<'student' | 'instructor'>('student');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+          }
+        }
       });
 
       if (error) throw error;
 
-      // The redirection will happen automatically in the useEffect
-      // when the auth state changes and role is fetched
+      toast({
+        title: "Account created successfully",
+        description: "Please check your email to verify your account or sign in.",
+      });
+
+      setLocation("/login");
     } catch (error: any) {
       toast({
-        title: "Sign in failed",
-        description: error.message || "Invalid login credentials",
+        title: "Registration failed",
+        description: error.message || "An error occurred during registration.",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -60,6 +62,9 @@ export default function Login() {
             access_type: 'offline',
             prompt: 'consent',
           },
+          // Google login will currently trigger handle_new_user and set role to student by default
+          // Setting the exact role for Google signups via OAuth requires additional setup (e.g., custom claims/pages)
+          // For now, the database trigger defaults to student if not provided.
         }
       });
       if (error) throw error;
@@ -73,7 +78,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden py-10">
       {/* Decorative Grid Background Elements */}
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
@@ -92,12 +97,53 @@ export default function Login() {
 
         <Card className="border-2 border-border shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)] bg-card rounded-none">
           <CardHeader className="bg-secondary border-b-2 border-border pb-6">
-            <CardTitle className="text-2xl font-display font-bold text-foreground">Welcome back</CardTitle>
-            <CardDescription className="text-muted-foreground font-medium text-base mt-1">Sign in to continue to your portal.</CardDescription>
+            <CardTitle className="text-2xl font-display font-bold text-foreground">Create an account</CardTitle>
+            <CardDescription className="text-muted-foreground font-medium text-base mt-1">Join the platform to start your journey.</CardDescription>
           </CardHeader>
           <CardContent className="pt-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-5">
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setRole('student')}
+                    className={`flex flex-col items-center justify-center p-4 border-2 rounded-none transition-all ${
+                      role === 'student'
+                        ? 'border-primary bg-primary/10 text-primary shadow-[4px_4px_0px_0px_rgba(255,211,0,0.3)]'
+                        : 'border-border bg-background text-muted-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    <UserIcon className="w-8 h-8 mb-2" />
+                    <span className="font-bold text-sm">Student</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('instructor')}
+                    className={`flex flex-col items-center justify-center p-4 border-2 rounded-none transition-all ${
+                      role === 'instructor'
+                        ? 'border-primary bg-primary/10 text-primary shadow-[4px_4px_0px_0px_rgba(255,211,0,0.3)]'
+                        : 'border-border bg-background text-muted-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    <GraduationCap className="w-8 h-8 mb-2" />
+                    <span className="font-bold text-sm">Instructor</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="fullName" className="text-foreground font-bold text-sm uppercase tracking-wider">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    className="bg-background border-2 border-border text-foreground rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] focus-visible:ring-0 focus-visible:border-primary transition-colors h-12 text-base font-medium placeholder:text-muted-foreground"
+                    placeholder="John Doe"
+                  />
+                </div>
+
                 <div className="space-y-3">
                   <Label htmlFor="email" className="text-foreground font-bold text-sm uppercase tracking-wider">Email</Label>
                   <Input
@@ -111,10 +157,7 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-foreground font-bold text-sm uppercase tracking-wider">Password</Label>
-                    <a href="#" className="text-sm text-primary hover:text-primary/80 hover:underline font-bold">Forgot?</a>
-                  </div>
+                  <Label htmlFor="password" className="text-foreground font-bold text-sm uppercase tracking-wider">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -122,7 +165,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="bg-background border-2 border-border text-foreground rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] focus-visible:ring-0 focus-visible:border-primary transition-colors h-12 text-base font-medium"
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                   />
                 </div>
               </div>
@@ -133,7 +176,7 @@ export default function Login() {
                   className="w-full h-14 text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-none shadow-[4px_4px_0px_0px_rgba(255,211,0,0.3)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? "Signing up..." : "Sign Up"}
                   {!isLoading && <ArrowRight className="ml-2 w-5 h-5" />}
                 </Button>
 
@@ -148,7 +191,7 @@ export default function Login() {
 
                 <Button
                   type="button"
-                  onClick={handleGoogleLogin}
+                  onClick={handleGoogleSignup}
                   className="w-full h-14 text-base font-bold bg-background text-foreground border-2 border-border hover:bg-secondary rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -170,15 +213,15 @@ export default function Login() {
                     />
                     <path d="M1 1h22v22H1z" fill="none" />
                   </svg>
-                  Sign in with Google
+                  Sign up with Google
                 </Button>
               </div>
 
               <div className="text-center mt-6">
                 <p className="text-sm text-muted-foreground font-medium">
-                  Don't have an account?{" "}
-                  <button type="button" onClick={() => setLocation("/signup")} className="text-primary hover:underline font-bold">
-                    Sign up
+                  Already have an account?{" "}
+                  <button type="button" onClick={() => setLocation("/login")} className="text-primary hover:underline font-bold">
+                    Sign in
                   </button>
                 </p>
               </div>

@@ -43,7 +43,7 @@ export default function Landing() {
                 Log In
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/signup">
               <Button className="font-bold bg-primary text-primary-foreground hover:bg-primary/90 border-b-4 border-primary/50 translate-y-[-2px] hover:translate-y-[0px] hover:border-b-0 transition-all rounded-sm px-6">
                 Sign Up
               </Button>
@@ -79,7 +79,7 @@ export default function Landing() {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/login">
+            <Link href="/signup">
               <Button size="lg" className="h-14 px-8 text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm w-full sm:w-auto shadow-[4px_4px_0px_0px_rgba(255,211,0,0.3)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
                 Start Coding for Free <ArrowRight className="ml-2 w-5 h-5" />
               </Button>

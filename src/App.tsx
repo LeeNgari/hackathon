@@ -30,6 +30,10 @@ import InstructorStudents from "@/pages/instructor/students";
 import InstructorTickets from "@/pages/instructor/tickets";
 import InstructorEarnings from "@/pages/instructor/earnings";
 import IDE from "./pages/editor";
+import Signup from "@/pages/signup";
+
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,29 +50,64 @@ function Router() {
       {/* Landing & Auth */}
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
 
       {/* Student */}
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/courses" component={Courses} />
-      <Route path="/courses/:id" component={CourseDetail} />
-      <Route path="/courses/:courseId/ticket/:ticketId" component={TicketView} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/streaks" component={Streaks} />
-      <Route path="/editor" component={IDE}/>
+      <Route path="/dashboard">
+        <ProtectedRoute component={Dashboard} allowedRoles={['student']} />
+      </Route>
+      <Route path="/courses">
+        <ProtectedRoute component={Courses} allowedRoles={['student']} />
+      </Route>
+      <Route path="/courses/:id">
+        {(params) => <ProtectedRoute component={CourseDetail} allowedRoles={['student']} params={params} />}
+      </Route>
+      <Route path="/courses/:courseId/ticket/:ticketId">
+        {(params) => <ProtectedRoute component={TicketView} allowedRoles={['student']} params={params} />}
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute component={Profile} allowedRoles={['student']} />
+      </Route>
+      <Route path="/streaks">
+        <ProtectedRoute component={Streaks} allowedRoles={['student']} />
+      </Route>
+      <Route path="/editor">
+        <ProtectedRoute component={IDE} allowedRoles={['student']} />
+      </Route>
 
       {/* Admin */}
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/courses" component={AdminCourses} />
-      <Route path="/admin/partners" component={AdminPartners} />
-      <Route path="/admin/finance" component={AdminFinance} />
-      <Route path="/admin/market" component={AdminMarket} />
+      <Route path="/admin/dashboard">
+        <ProtectedRoute component={AdminDashboard} allowedRoles={['admin']} />
+      </Route>
+      <Route path="/admin/courses">
+        <ProtectedRoute component={AdminCourses} allowedRoles={['admin']} />
+      </Route>
+      <Route path="/admin/partners">
+        <ProtectedRoute component={AdminPartners} allowedRoles={['admin']} />
+      </Route>
+      <Route path="/admin/finance">
+        <ProtectedRoute component={AdminFinance} allowedRoles={['admin']} />
+      </Route>
+      <Route path="/admin/market">
+        <ProtectedRoute component={AdminMarket} allowedRoles={['admin']} />
+      </Route>
 
       {/* Instructor */}
-      <Route path="/instructor/dashboard" component={InstructorDashboard} />
-      <Route path="/instructor/courses" component={InstructorCourses} />
-      <Route path="/instructor/students" component={InstructorStudents} />
-      <Route path="/instructor/tickets" component={InstructorTickets} />
-      <Route path="/instructor/earnings" component={InstructorEarnings} />
+      <Route path="/instructor/dashboard">
+        <ProtectedRoute component={InstructorDashboard} allowedRoles={['instructor']} />
+      </Route>
+      <Route path="/instructor/courses">
+        <ProtectedRoute component={InstructorCourses} allowedRoles={['instructor']} />
+      </Route>
+      <Route path="/instructor/students">
+        <ProtectedRoute component={InstructorStudents} allowedRoles={['instructor']} />
+      </Route>
+      <Route path="/instructor/tickets">
+        <ProtectedRoute component={InstructorTickets} allowedRoles={['instructor']} />
+      </Route>
+      <Route path="/instructor/earnings">
+        <ProtectedRoute component={InstructorEarnings} allowedRoles={['instructor']} />
+      </Route>
 
       <Route component={NotFound} />
     </Switch>
@@ -78,12 +117,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
