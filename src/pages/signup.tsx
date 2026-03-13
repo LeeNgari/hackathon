@@ -140,7 +140,7 @@ export default function Signup() {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     className="bg-background border-2 border-border text-foreground rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] focus-visible:ring-0 focus-visible:border-primary transition-colors h-12 text-base font-medium placeholder:text-muted-foreground"
-                    placeholder="John Doe"
+                    placeholder="Win Hackathons"
                   />
                 </div>
 

@@ -21,10 +21,10 @@ import {
 export default function TicketView() {
   const [, params] = useRoute("/courses/:courseId/ticket/:ticketId");
   const [, setLocation] = useLocation();
-  
+
   const courseId = params?.courseId || "";
   const ticketId = params?.ticketId || "";
-  
+
   const { data: course, isLoading: courseLoading } = useCourse(courseId);
   const { data: ticket, isLoading: ticketLoading } = useTicket(courseId, ticketId);
   const submitMutation = useSubmitTicket();
@@ -37,17 +37,17 @@ export default function TicketView() {
 
   const handleSubmit = async () => {
     if (!isFormValid) return;
-    
+
     await submitMutation.mutateAsync({ courseId, ticketId, content });
-    
+
     // Trigger confetti
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
-    
+
     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-    
-    const interval: any = setInterval(function() {
+
+    const interval: any = setInterval(function () {
       const timeLeft = animationEnd - Date.now();
       if (timeLeft <= 0) return clearInterval(interval);
       const particleCount = 50 * (timeLeft / duration);
@@ -65,8 +65,8 @@ export default function TicketView() {
 
   if (courseLoading || ticketLoading || !ticket || !course) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <Skeleton className="h-6 w-48 mb-8 bg-secondary border-2 border-border rounded-none" />
+      <div className="min-h-screen bg-slate-50 p-6">
+        <Skeleton className="h-6 w-48 mb-8" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Skeleton className="h-[600px] rounded-none bg-secondary border-2 border-border" />
           <Skeleton className="h-[600px] rounded-none bg-secondary border-2 border-border" />
@@ -108,7 +108,7 @@ export default function TicketView() {
       {/* Main Workspace */}
       <main className="flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto h-full grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Left Column: Context & Task */}
           <div className="lg:col-span-5 flex flex-col h-full space-y-6 overflow-y-auto pr-2 pb-8 lg:pb-0 scrollbar-thin scrollbar-thumb-secondary scrollbar-track-background">
             <div>
@@ -134,14 +134,14 @@ export default function TicketView() {
               <div className="space-y-4">
                 {deliverablesList.map((item, idx) => (
                   <div key={idx} className="flex items-start gap-4">
-                    <Checkbox 
-                      id={`chk-${idx}`} 
+                    <Checkbox
+                      id={`chk-${idx}`}
                       className="mt-1 rounded-none border-2 border-foreground data-[state=checked]:bg-success data-[state=checked]:text-success-foreground data-[state=checked]:border-foreground w-5 h-5"
                       checked={checkedItems[idx] || false}
-                      onCheckedChange={(checked) => setCheckedItems(prev => ({...prev, [idx]: !!checked}))}
+                      onCheckedChange={(checked) => setCheckedItems(prev => ({ ...prev, [idx]: !!checked }))}
                     />
-                    <label 
-                      htmlFor={`chk-${idx}`} 
+                    <label
+                      htmlFor={`chk-${idx}`}
                       className={`text-base leading-snug cursor-pointer transition-colors font-bold ${checkedItems[idx] ? 'text-muted-foreground line-through opacity-70' : 'text-foreground'}`}
                     >
                       {item}
@@ -159,9 +159,9 @@ export default function TicketView() {
                 <div className="w-3 h-3 bg-foreground rounded-none"></div> Your Workspace
               </span>
             </div>
-            
+
             <div className="flex-1 p-0 relative bg-background">
-              <Textarea 
+              <Textarea
                 placeholder="Structure your solution, code, or analysis here..."
                 className="w-full h-full min-h-[400px] border-0 focus-visible:ring-0 rounded-none resize-none p-6 text-base text-foreground bg-background placeholder:text-muted-foreground leading-relaxed font-mono focus:bg-secondary/10 transition-colors"
                 value={content}
@@ -173,7 +173,7 @@ export default function TicketView() {
               <p className="text-sm text-foreground font-bold">
                 {content.length > 0 ? <span className="text-primary">{content.length} characters</span> : <span className="text-muted-foreground">Waiting for input...</span>}
               </p>
-              <Button 
+              <Button
                 onClick={handleSubmit}
                 disabled={!isFormValid || submitMutation.isPending}
                 className="rounded-none border-2 border-foreground bg-primary text-primary-foreground font-bold shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all min-w-[160px] h-12"
