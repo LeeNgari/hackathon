@@ -13,11 +13,11 @@ const statCards = [
   { label: "Tickets Completed", value: platformStats.ticketsCompleted.toLocaleString(), sub: `Avg. streak ${platformStats.avgStreakDays} days`, icon: TicketCheck, color: "bg-amber-100 text-amber-600", accent: "bg-amber-500" },
 ];
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 280, damping: 24 } },
 };
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
                     </div>
                     <h3 className="text-sm font-bold text-slate-800 leading-tight">{course.title}</h3>
                     <p className="text-xs text-slate-500 mt-1">by {course.instructor}</p>
-                    <p className="text-xs text-slate-400 mt-2">{course.tickets} tickets · {course.sprints} sprints</p>
+                    <p className="text-xs text-slate-400 mt-2">{course.tickets} tickets</p>
                   </CardContent>
                 </Card>
               ))}

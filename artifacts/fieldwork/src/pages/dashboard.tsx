@@ -13,7 +13,7 @@ export default function Dashboard() {
   const { data: user, isLoading: userLoading } = useUser();
   const { data: courses, isLoading: coursesLoading } = useEnrolledCourses();
 
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -21,7 +21,7 @@ export default function Dashboard() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
