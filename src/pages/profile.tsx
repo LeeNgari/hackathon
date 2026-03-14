@@ -79,10 +79,13 @@ export default function Profile() {
           </div>
           
           <div className="relative z-10 text-center md:text-left flex-1">
-            <h1 className="text-3xl font-display font-bold text-slate-900">{user.name}</h1>
-            <p className="text-lg text-slate-500 font-medium mt-1">{user.degree}</p>
-            <p className="text-slate-400">{user.institution}</p>
-            
+            <h1 className="text-3xl font-display font-bold text-slate-900">{user.name || "User"}</h1>
+            {(user.degree || user.institution) && (
+              <>
+                {user.degree && <p className="text-lg text-slate-500 font-medium mt-1">{user.degree}</p>}
+                {user.institution && <p className="text-slate-400">{user.institution}</p>}
+              </>
+            )}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-6">
               <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 px-3 py-1 text-sm font-bold">
                 🔥 {user.currentStreak} Day Streak

@@ -20,6 +20,7 @@ export interface AuthProfile {
   institution: string | null;
   current_streak: number;
   best_streak: number;
+  created_at: string;
 }
 
 interface AuthState {
@@ -59,7 +60,7 @@ async function fetchProfile(userId: string): Promise<AuthProfile | null> {
     const { data, error } = await client
       .from("profiles")
       .select(
-        "id, role, full_name, avatar_url, degree, institution, current_streak, best_streak",
+        "id, role, full_name, avatar_url, degree, institution, current_streak, best_streak, created_at",
       )
       .eq("id", userId)
       .single();
@@ -79,6 +80,7 @@ async function fetchProfile(userId: string): Promise<AuthProfile | null> {
       institution: data.institution ?? null,
       current_streak: data.current_streak ?? 0,
       best_streak: data.best_streak ?? 0,
+      created_at: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
     };
   })();
 

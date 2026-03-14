@@ -35,15 +35,18 @@ function guestUser(): User {
 function mapAuthToUser(
   userId: string,
   email: string | undefined,
-  profile: { full_name: string; degree: string | null; institution: string | null; current_streak: number; best_streak: number }
+  profile: { full_name: string; degree: string | null; institution: string | null; current_streak: number; best_streak: number; created_at?: string }
 ): User {
+  const joinDate = profile.created_at
+    ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    : new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
   return {
     id: userId,
-    name: profile.full_name || email || "User",
+    name: (profile.full_name || email || "User").trim() || "User",
     email: email ?? "",
     degree: profile.degree ?? "",
     institution: profile.institution ?? "",
-    joinDate: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+    joinDate,
     currentStreak: profile.current_streak,
     bestStreak: profile.best_streak,
     feeRefunded: 0,
@@ -58,8 +61,81 @@ export function useUser() {
   const isAuthenticated = !!authUser && !!profile;
 
   return useQuery({
-    queryKey: ["user", authUser?.id ?? "anonymous"],
+    queryKey: ["user", authUser?.id ?? "anonymous", profile?.created_at ?? ""],
     queryFn: async (): Promise<User> => {
+      // When profile failed to load (e.g. timeout), still show auth user info and try to get profile fields from DB
+      if (authUser && !profile) {
+        let name = authUser.email || "User";
+        let degree = "";
+        let institution = "";
+        let joinDate = "—";
+        let currentStreak = 0;
+        let bestStreak = 0;
+        if (supabase) {
+          const { data: profileRow } = await supabase
+            .from("profiles")
+            .select("full_name, degree, institution, current_streak, best_streak, created_at")
+            .eq("id", authUser.id)
+            .single();
+          if (profileRow) {
+            name = (profileRow.full_name || authUser.email || "User").trim() || "User";
+            degree = profileRow.degree ?? "";
+            institution = profileRow.institution ?? "";
+            currentStreak = profileRow.current_streak ?? 0;
+            bestStreak = profileRow.best_streak ?? 0;
+            if (profileRow.created_at) {
+              joinDate = new Date(profileRow.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+            }
+          }
+        }
+        const fallback: User = {
+          id: authUser.id,
+          name,
+          email: authUser.email ?? "",
+          degree,
+          institution,
+          joinDate,
+          currentStreak,
+          bestStreak,
+          feeRefunded: 0,
+          feeTotal: 0,
+          ticketsCompleted: 0,
+          certificates: [],
+        };
+        if (!supabase) return fallback;
+        const { count: ticketsCount } = await supabase
+          .from("ticket_attempts")
+          .select("id", { count: "exact", head: true })
+          .eq("student_id", authUser.id)
+          .in("status", ["submitted", "passed", "failed"]);
+        if (ticketsCount != null) fallback.ticketsCompleted = ticketsCount;
+        const { data: enrollments } = await supabase
+          .from("enrollments")
+          .select("id, course_id, completed_at, updated_at")
+          .eq("student_id", authUser.id)
+          .or("status.eq.completed,progress_percent.gte.100");
+        if (enrollments?.length) {
+          const courseIds = enrollments.map((e: { course_id: string }) => e.course_id);
+          const { data: coursesData } = await supabase
+            .from("courses")
+            .select("id, title, total_sprints")
+            .in("id", courseIds);
+          const courseById = new Map(
+            (coursesData ?? []).map((c: { id: string; title: string; total_sprints: number }) => [c.id, c])
+          );
+          fallback.certificates = enrollments.map((e: { id: string; course_id: string; completed_at: string | null; updated_at: string }) => {
+            const c = courseById.get(e.course_id);
+            const dateEarned = e.completed_at ?? e.updated_at ?? new Date().toISOString();
+            return {
+              id: e.id,
+              courseTitle: c?.title ?? "Course",
+              dateEarned: typeof dateEarned === "string" ? dateEarned : new Date(dateEarned).toISOString(),
+              sprintsCompleted: c?.total_sprints ?? 0,
+            };
+          });
+        }
+        return fallback;
+      }
       if (isAuthenticated && authUser && profile) {
         const base = mapAuthToUser(authUser.id, authUser.email, profile);
         if (!supabase) return base;
