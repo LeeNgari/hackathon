@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { mockUser, mockCourses, Ticket } from "@/lib/mock-data";
+import { mockCourses, Ticket } from "@/lib/mock-data";
+import { supabase } from "@/lib/supabase";
 
 // Since this is a static prototype without a real backend, we use TanStack Query 
 // with static data and artificial delays to simulate a real API experience.
@@ -10,8 +11,54 @@ export function useUser() {
   return useQuery({
     queryKey: ['user'],
     queryFn: async () => {
-      await delay(400);
-      return mockUser;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (!profile) return null;
+
+      const { count: ticketsCount } = await supabase
+        .from('ticket_attempts')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', session.user.id)
+        .eq('status', 'passed');
+
+      const { data: certificates } = await supabase
+        .from('certificates')
+        .select(`
+          id,
+          sprints_completed,
+          issued_at,
+          courses ( title )
+        `)
+        .eq('student_id', session.user.id);
+
+      const formattedCerts = (certificates || []).map((c: any) => ({
+        id: c.id,
+        courseTitle: c.courses?.title || 'Unknown Course',
+        dateEarned: c.issued_at,
+        sprintsCompleted: c.sprints_completed
+      }));
+
+      return {
+        id: profile.id,
+        name: profile.full_name || 'User',
+        email: session.user.email || '',
+        degree: profile.degree || 'No Degree Listed',
+        institution: profile.institution || 'No Institution Listed',
+        joinDate: new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        currentStreak: profile.current_streak || 0,
+        bestStreak: profile.best_streak || 0,
+        feeRefunded: 0,
+        feeTotal: 0,
+        ticketsCompleted: ticketsCount || 0,
+        certificates: formattedCerts
+      };
     }
   });
 }

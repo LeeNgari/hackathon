@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import {
   LayoutDashboard,
   BookOpen,
@@ -9,7 +10,6 @@ import {
   Hexagon,
   TrendingUp,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -34,14 +34,11 @@ const navItems = [
 
 export function AdminSidebar() {
   const [location, setLocation] = useLocation();
-  const { signOut, profile } = useAuth();
+  const { signOut, user } = useAuth();
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-    } finally {
-      setLocation("/login");
-    }
+    await signOut();
+    setLocation("/login");
   };
 
   return (
@@ -87,12 +84,12 @@ export function AdminSidebar() {
 
       <SidebarFooter className="p-4 space-y-3">
         <div className="px-2 py-3 rounded-lg bg-purple-50 border border-purple-100">
-          <p className="text-xs font-semibold text-purple-800">{profile?.full_name || "Admin"}</p>
+          <p className="text-xs font-semibold text-purple-800">{user?.user_metadata?.full_name || 'Admin'}</p>
           <p className="text-[11px] text-purple-500 mt-0.5">Platform Administrator</p>
         </div>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="text-slate-500 hover:text-destructive w-full" onClick={handleSignOut}>
+            <SidebarMenuButton onClick={handleSignOut} className="text-slate-500 hover:text-destructive cursor-pointer">
               <LogOut className="w-5 h-5" />
               <span>Sign Out</span>
             </SidebarMenuButton>
