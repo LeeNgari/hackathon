@@ -140,9 +140,9 @@ export default function Courses() {
                         variant="outline"
                         className="w-full sm:w-auto font-bold bg-secondary text-foreground hover:bg-background border-2 border-border rounded-none px-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                         onClick={() => handleEnroll(course.id)}
-                        disabled={enrollMutation.isPending}
+                        disabled={enrollMutation.isPending && enrollMutation.variables === course.id}
                       >
-                        {enrollMutation.isPending ? "Enrolling…" : "Enroll Now"}
+                        {enrollMutation.isPending && enrollMutation.variables === course.id ? "Enrolling…" : "Enroll Now"}
                       </Button>
                     )}
                   </CardFooter>
