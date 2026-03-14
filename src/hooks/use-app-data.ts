@@ -532,17 +532,35 @@ export function useEnrolledCoursesWithSprints() {
         const enrollment = enrollmentByCourse.get(c.id);
         const attemptedTicketIds = attemptedByCourse.get(c.id) ?? new Set<string>();
         const sprintsList = sprintsByCourse.get(c.id) ?? [];
-        const currentSprintId = enrollment?.current_sprint_id ?? sprintsList[0]?.id ?? null;
         const sprintOrder = new Map(sprintsList.map((s, i) => [s.id, i]));
 
+        // Helper: whether every ticket in a sprint has been attempted (sprint is "complete")
+        const isSprintComplete = (sprintIndex: number): boolean => {
+          const s = sprintsList[sprintIndex];
+          if (!s) return true;
+          const ticketsInSprint = ticketsBySprint.get(s.id) ?? [];
+          return ticketsInSprint.length > 0 && ticketsInSprint.every((t) => attemptedTicketIds.has(t.id));
+        };
+
+        // Unlock rule: a sprint is unlocked if it's the first sprint OR the previous sprint is complete.
         const getTicketStatus = (ticketId: string, sprintId: string): TicketStatus => {
           if (attemptedTicketIds.has(ticketId)) return 'Completed';
           const sprintIdx = sprintOrder.get(sprintId) ?? 0;
-          const currentIdx = currentSprintId != null ? (sprintOrder.get(currentSprintId) ?? 0) : 0;
-          if (sprintIdx < currentIdx) return 'Active';
-          if (sprintIdx > currentIdx) return 'Locked';
+          const previousSprintComplete = sprintIdx === 0 || isSprintComplete(sprintIdx - 1);
+          if (!previousSprintComplete) return 'Locked';
           return 'Active';
         };
+
+        // Current sprint for display: first sprint that has at least one ticket not yet attempted
+        let currentSprintIndex = 0;
+        for (let i = 0; i < sprintsList.length; i++) {
+          if (!isSprintComplete(i)) {
+            currentSprintIndex = i;
+            break;
+          }
+          currentSprintIndex = i;
+        }
+        const currentSprintId = sprintsList[currentSprintIndex]?.id ?? sprintsList[0]?.id ?? null;
 
         const sprints: Sprint[] = sprintsList.map((s) => ({
           id: s.id,
@@ -1915,24 +1933,40 @@ export function useCourse(id: string) {
         }
       }
 
-      const currentSprintId = enrollment?.current_sprint_id ?? sprintsList[0]?.id ?? null;
-      const sprintOrder = new Map(sprintsList.map((s, i) => [s.id, i]));
-      type TicketStatus = Ticket['status'];
-      const getTicketStatus = (ticketId: string, sprintId: string): TicketStatus => {
-        if (attemptedTicketIds.has(ticketId)) return 'Completed';
-        const sprintIdx = sprintOrder.get(sprintId) ?? 0;
-        const currentIdx = currentSprintId != null ? (sprintOrder.get(currentSprintId) ?? 0) : 0;
-        if (sprintIdx < currentIdx) return 'Active';
-        if (sprintIdx > currentIdx) return 'Locked';
-        return 'Active';
-      };
-
       const ticketsBySprint = new Map<string, typeof ticketsList>();
       for (const t of ticketsList) {
         const list = ticketsBySprint.get(t.sprint_id) ?? [];
         list.push(t);
         ticketsBySprint.set(t.sprint_id, list);
       }
+
+      const sprintOrder = new Map(sprintsList.map((s, i) => [s.id, i]));
+      type TicketStatus = Ticket['status'];
+
+      // Unlock rule: sprint is unlocked if first sprint OR previous sprint is complete (all tickets attempted)
+      const isSprintComplete = (sprintIndex: number): boolean => {
+        const s = sprintsList[sprintIndex];
+        if (!s) return true;
+        const ticketsInSprint = ticketsBySprint.get(s.id) ?? [];
+        return ticketsInSprint.length > 0 && ticketsInSprint.every((t) => attemptedTicketIds.has(t.id));
+      };
+      const getTicketStatus = (ticketId: string, sprintId: string): TicketStatus => {
+        if (attemptedTicketIds.has(ticketId)) return 'Completed';
+        const sprintIdx = sprintOrder.get(sprintId) ?? 0;
+        const previousSprintComplete = sprintIdx === 0 || isSprintComplete(sprintIdx - 1);
+        if (!previousSprintComplete) return 'Locked';
+        return 'Active';
+      };
+
+      let currentSprintIndex = 0;
+      for (let i = 0; i < sprintsList.length; i++) {
+        if (!isSprintComplete(i)) {
+          currentSprintIndex = i;
+          break;
+        }
+        currentSprintIndex = i;
+      }
+      const currentSprintId = sprintsList[currentSprintIndex]?.id ?? sprintsList[0]?.id ?? null;
 
       const sprints: Sprint[] = sprintsList.map((s) => ({
         id: s.id,
@@ -2088,13 +2122,13 @@ export function useTicketAttempt(
         return { attempt: null, deliverableSubmissions: [], noEnrollment: true, hasAttemptedBefore: false };
       }
 
-      // 1. Get enrollment for this student + course
+      // 1. Get enrollment for this student + course (active or completed = enrolled)
       const { data: enrollment, error: enrollError } = await supabase
         .from("enrollments")
         .select("id")
         .eq("course_id", courseId)
         .eq("student_id", authUser.id)
-        .eq("status", "active")
+        .in("status", ["active", "completed"])
         .maybeSingle();
 
       if (enrollError || !enrollment) {
