@@ -13,6 +13,8 @@ export interface Ticket {
   isUrgent?: boolean;
   scenario?: string;
   deliverables?: string[];
+  /** True when the user has at least one attempt (any status) for this ticket */
+  hasAttemptedBefore?: boolean;
 }
 
 export interface Sprint {

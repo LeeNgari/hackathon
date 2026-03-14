@@ -31,6 +31,8 @@ type TicketDetailSheetProps = {
   courseTitle?: string;
   /** For student: link to start the ticket (e.g. /courses/:id/ticket/:ticketId) */
   startTicketHref?: string | null;
+  /** For student: button label, e.g. "Start Ticket" or "Continue" */
+  startTicketLabel?: string;
 };
 
 export function TicketDetailSheet({
@@ -41,6 +43,7 @@ export function TicketDetailSheet({
   variant,
   courseTitle,
   startTicketHref,
+  startTicketLabel = "Start Ticket",
 }: TicketDetailSheetProps) {
   const studentTicket = useTicket(courseId, ticketId ?? "", {
     enabled: variant === "student" && !!ticketId,
@@ -164,7 +167,7 @@ export function TicketDetailSheet({
           {startTicketHref && ticketId && (
             <Button asChild className="w-full sm:w-auto shadow-md">
               <Link href={startTicketHref}>
-                Start Ticket <ArrowRight className="ml-2 w-4 h-4" />
+                {startTicketLabel} <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </Button>
           )}

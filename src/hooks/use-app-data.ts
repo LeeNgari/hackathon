@@ -995,6 +995,7 @@ export function useCourse(id: string) {
 
       let enrollment: { progress_percent: number; current_sprint_id: string | null } | null = null;
       const passedTicketIds = new Set<string>();
+      const attemptedTicketIds = new Set<string>();
       if (authUser?.id) {
         const { data: enrollData } = await supabase
           .from('enrollments')
@@ -1005,12 +1006,17 @@ export function useCourse(id: string) {
           .maybeSingle();
         if (enrollData) {
           enrollment = { progress_percent: Number(enrollData.progress_percent ?? 0), current_sprint_id: enrollData.current_sprint_id };
-          const { data: attempts } = await supabase
+          const { data: passedAttempts } = await supabase
             .from('ticket_attempts')
             .select('ticket_id')
             .eq('enrollment_id', enrollData.id)
             .eq('status', 'passed');
-          if (attempts) attempts.forEach(a => passedTicketIds.add(a.ticket_id));
+          if (passedAttempts) passedAttempts.forEach(a => passedTicketIds.add(a.ticket_id));
+          const { data: anyAttempts } = await supabase
+            .from('ticket_attempts')
+            .select('ticket_id')
+            .eq('enrollment_id', enrollData.id);
+          if (anyAttempts) anyAttempts.forEach(a => attemptedTicketIds.add(a.ticket_id));
         }
       }
 
@@ -1043,6 +1049,7 @@ export function useCourse(id: string) {
           type: (t.type ?? 'Build') as Ticket['type'],
           durationEstimate: t.duration_estimate_minutes != null ? `${t.duration_estimate_minutes} mins` : '30 mins',
           status: getTicketStatus(t.id, s.id),
+          hasAttemptedBefore: attemptedTicketIds.has(t.id),
         } as Ticket)),
       }));
 
@@ -1177,6 +1184,8 @@ export interface TicketAttemptData {
   attempt: TicketAttemptRow | null;
   deliverableSubmissions: DeliverableSubmissionRow[];
   noEnrollment: boolean;
+  /** True when current attempt is in_progress and user has at least one completed attempt (submitted/passed/failed) for this ticket */
+  hasAttemptedBefore: boolean;
 }
 
 export function useTicketAttempt(
@@ -1192,7 +1201,7 @@ export function useTicketAttempt(
       options?.enabled !== false && !!ticketId && !!courseId && !!authUser?.id && !!supabase,
     queryFn: async (): Promise<TicketAttemptData> => {
       if (!supabase || !authUser?.id || !ticketId || !courseId) {
-        return { attempt: null, deliverableSubmissions: [], noEnrollment: true };
+        return { attempt: null, deliverableSubmissions: [], noEnrollment: true, hasAttemptedBefore: false };
       }
 
       // 1. Get enrollment for this student + course
@@ -1205,7 +1214,7 @@ export function useTicketAttempt(
         .maybeSingle();
 
       if (enrollError || !enrollment) {
-        return { attempt: null, deliverableSubmissions: [], noEnrollment: true };
+        return { attempt: null, deliverableSubmissions: [], noEnrollment: true, hasAttemptedBefore: false };
       }
 
       const enrollmentId = enrollment.id;
@@ -1223,7 +1232,7 @@ export function useTicketAttempt(
 
       if (attemptFindError) {
         console.error("[useTicketAttempt] Failed to find attempt", attemptFindError);
-        return { attempt: null, deliverableSubmissions: [], noEnrollment: false };
+        return { attempt: null, deliverableSubmissions: [], noEnrollment: false, hasAttemptedBefore: false };
       }
 
       if (existingAttempt) {
@@ -1232,10 +1241,17 @@ export function useTicketAttempt(
           .select("*")
           .eq("attempt_id", existingAttempt.id)
           .order("created_at", { ascending: true });
+        const { count: completedCount } = await supabase
+          .from("ticket_attempts")
+          .select("*", { count: "exact", head: true })
+          .eq("enrollment_id", enrollmentId)
+          .eq("ticket_id", ticketId)
+          .in("status", ["submitted", "passed", "failed"]);
         return {
           attempt: existingAttempt as TicketAttemptRow,
           deliverableSubmissions: (subs ?? []) as DeliverableSubmissionRow[],
           noEnrollment: false,
+          hasAttemptedBefore: (completedCount ?? 0) >= 1,
         };
       }
 
@@ -1259,6 +1275,7 @@ export function useTicketAttempt(
           attempt: anyAttempt as TicketAttemptRow,
           deliverableSubmissions: (subs ?? []) as DeliverableSubmissionRow[],
           noEnrollment: false,
+          hasAttemptedBefore: false,
         };
       }
 
@@ -1271,7 +1288,7 @@ export function useTicketAttempt(
 
       if (delivError || !deliverables?.length) {
         console.error("[useTicketAttempt] No deliverables for ticket", delivError);
-        return { attempt: null, deliverableSubmissions: [], noEnrollment: false };
+        return { attempt: null, deliverableSubmissions: [], noEnrollment: false, hasAttemptedBefore: false };
       }
 
       const { data: newAttempt, error: insertAttemptError } = await supabase
@@ -1287,7 +1304,7 @@ export function useTicketAttempt(
 
       if (insertAttemptError || !newAttempt) {
         console.error("[useTicketAttempt] Failed to create attempt", insertAttemptError);
-        return { attempt: null, deliverableSubmissions: [], noEnrollment: false };
+        return { attempt: null, deliverableSubmissions: [], noEnrollment: false, hasAttemptedBefore: false };
       }
 
       const attemptId = (newAttempt as { id: string }).id;
@@ -1307,6 +1324,7 @@ export function useTicketAttempt(
           attempt: newAttempt as TicketAttemptRow,
           deliverableSubmissions: [],
           noEnrollment: false,
+          hasAttemptedBefore: false,
         };
       }
 
@@ -1320,7 +1338,74 @@ export function useTicketAttempt(
         attempt: newAttempt as TicketAttemptRow,
         deliverableSubmissions: (subs ?? []) as DeliverableSubmissionRow[],
         noEnrollment: false,
+        hasAttemptedBefore: false,
       };
+    },
+  });
+}
+
+/** Start a new attempt for a ticket (e.g. after previous attempt was graded). Invalidates ticket-attempt query. */
+export function useStartNewTicketAttempt() {
+  const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
+
+  return useMutation({
+    mutationFn: async (params: { courseId: string; ticketId: string }) => {
+      if (!supabase || !authUser?.id) throw new Error("Not authenticated");
+      const { courseId, ticketId } = params;
+
+      const { data: enrollment, error: enrollError } = await supabase
+        .from("enrollments")
+        .select("id")
+        .eq("course_id", courseId)
+        .eq("student_id", authUser.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (enrollError || !enrollment) throw new Error("Enrollment not found");
+
+      const { data: deliverables, error: delivError } = await supabase
+        .from("ticket_deliverables")
+        .select("id")
+        .eq("ticket_id", ticketId)
+        .order("order_index", { ascending: true });
+
+      if (delivError || !deliverables?.length) throw new Error("No deliverables for this ticket");
+
+      const { data: newAttempt, error: insertAttemptError } = await supabase
+        .from("ticket_attempts")
+        .insert({
+          student_id: authUser.id,
+          ticket_id: ticketId,
+          enrollment_id: enrollment.id,
+          status: "in_progress",
+        })
+        .select("*")
+        .single();
+
+      if (insertAttemptError || !newAttempt) throw new Error("Failed to start new attempt");
+
+      const attemptId = (newAttempt as { id: string }).id;
+      const subsPayload = deliverables.map((d: { id: string }) => ({
+        attempt_id: attemptId,
+        deliverable_id: d.id,
+        content: "",
+      }));
+
+      const { error: insertSubsError } = await supabase
+        .from("deliverable_submissions")
+        .insert(subsPayload);
+
+      if (insertSubsError) throw new Error("Failed to create deliverable submissions");
+
+      return { attemptId };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-attempt", variables.courseId, variables.ticketId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
   });
 }

@@ -123,6 +123,8 @@ export async function gradeAttemptForTicket(
       deliverableId: s.deliverable_id,
       content: s.content ?? "",
     })),
+    submissionCode: attempt.submission_code ?? null,
+    submissionText: attempt.submission_text ?? null,
   };
 
   const gradingResult: GradingResult = await gradeSubmission(
@@ -130,7 +132,14 @@ export async function gradeAttemptForTicket(
   );
 
   const now = new Date().toISOString();
-  const passedThreshold = 70;
+  const defaultThreshold =
+    typeof process !== "undefined" && process.env.PASS_THRESHOLD_DEFAULT != null
+      ? Number.parseInt(process.env.PASS_THRESHOLD_DEFAULT, 10)
+      : 70;
+  const passedThreshold =
+    ticket.pass_threshold_percent != null
+      ? ticket.pass_threshold_percent
+      : (Number.isFinite(defaultThreshold) ? defaultThreshold : 70);
   const attemptStatus =
     gradingResult.overallScore >= passedThreshold
       ? "passed"

@@ -184,7 +184,7 @@ export function buildGradingSystemPrompt() {
 }
 
 export function buildGradingUserPrompt(context: GradingContext): string {
-  const { ticket, scenario, deliverables, submissions } = context;
+  const { ticket, scenario, deliverables, submissions, submissionCode, submissionText } = context;
 
   const deliverableMap = new Map(
     deliverables.map((d) => [d.id, d] as const),
@@ -211,7 +211,7 @@ export function buildGradingUserPrompt(context: GradingContext): string {
     )
     .join("\n");
 
-  return [
+  const sections: string[] = [
     "=== TICKET CONTEXT ===",
     `Ticket title: ${ticket.title}`,
     ticket.description
@@ -235,6 +235,28 @@ export function buildGradingUserPrompt(context: GradingContext): string {
     "=== STUDENT RESPONSES PER DELIVERABLE ===",
     submissionBlocks ||
       "(student did not submit any responses).",
-  ].join("\n");
+  ];
+
+  if (submissionCode?.trim()) {
+    sections.push(
+      "",
+      "=== CODE SUBMISSION ===",
+      "Below is the student's code submission; evaluate correctness, clarity, and best practices.",
+      "",
+      submissionCode.trim(),
+    );
+  }
+
+  if (submissionText?.trim()) {
+    sections.push(
+      "",
+      "=== REPORT / NOTES (ATTEMPT-LEVEL) ===",
+      "Additional attempt-level notes or report from the student:",
+      "",
+      submissionText.trim(),
+    );
+  }
+
+  return sections.join("\n");
 }
 

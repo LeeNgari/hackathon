@@ -15,6 +15,7 @@ import {
   useCourse,
   useSubmitTicket,
   useTicketAttempt,
+  useStartNewTicketAttempt,
   type AttemptStatus,
 } from "@/hooks/use-app-data";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,10 +64,14 @@ export default function TicketView() {
   const attempt = attemptData?.attempt ?? null;
   const deliverableSubmissions = attemptData?.deliverableSubmissions ?? [];
   const noEnrollment = attemptData?.noEnrollment ?? false;
+  const hasAttemptedBefore = attemptData?.hasAttemptedBefore ?? false;
   const status: AttemptStatus | undefined = attempt?.status;
+
+  const startNewAttemptMutation = useStartNewTicketAttempt();
 
   const [content, setContent] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isAutoGrading, setIsAutoGrading] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
   // Prefill workspace from first deliverable or submission_text when attempt loads
@@ -92,6 +97,15 @@ export default function TicketView() {
       attemptId: attempt.id,
       content,
     });
+    setIsAutoGrading(true);
+    try {
+      await gradeMutation.mutateAsync();
+      await refetchAttempt();
+    } catch {
+      // Grading failed; user can use "Grade with AI" manually
+    } finally {
+      setIsAutoGrading(false);
+    }
     setShowSuccess(true);
   };
 
@@ -108,6 +122,22 @@ export default function TicketView() {
   const handleNext = () => {
     setShowSuccess(false);
     setLocation(`/courses/${courseId}`);
+  };
+
+  const handleReviewFeedback = () => {
+    setShowSuccess(false);
+    // Stay on page so user can see feedback panel and workspace
+  };
+
+  const handleRestartTicket = async () => {
+    try {
+      await startNewAttemptMutation.mutateAsync({ courseId, ticketId });
+      await refetchAttempt();
+      setContent("");
+      setCheckedItems({});
+    } catch {
+      // Error handled by mutation
+    }
   };
 
   if (isError) {
@@ -256,26 +286,74 @@ export default function TicketView() {
               </div>
             </div>
 
-            {isGraded && attempt?.ai_review_text && (
+            {(isGraded && (attempt?.ai_score != null || attempt?.ai_review_text)) && (
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
                   Feedback
                 </h2>
-                {attempt.ai_score != null && (
+                {attempt?.ai_score != null && (
                   <p className="text-sm font-semibold text-slate-700 mb-2">
                     Score: {attempt.ai_score}%
                   </p>
                 )}
-                <p className="text-slate-700 text-[15px] leading-relaxed whitespace-pre-wrap">
-                  {attempt.ai_review_text}
-                </p>
+                {attempt?.ai_review_text ? (
+                  <p className="text-slate-700 text-[15px] leading-relaxed whitespace-pre-wrap">
+                    {attempt.ai_review_text}
+                  </p>
+                ) : (
+                  <p className="text-slate-500 text-sm">No written feedback for this attempt.</p>
+                )}
+              </div>
+            )}
+            {isGraded &&
+              deliverableSubmissions.some(
+                (sub) => sub.ai_score != null || (sub.ai_feedback != null && sub.ai_feedback !== "")
+              ) && (
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Feedback by deliverable
+                </h2>
+                <div className="space-y-4">
+                  {deliverableSubmissions.map((sub, idx) => {
+                    if (sub.ai_score == null && (!sub.ai_feedback || sub.ai_feedback === ""))
+                      return null;
+                    const label = deliverablesList[idx] ?? `Deliverable ${idx + 1}`;
+                    return (
+                      <div
+                        key={sub.id}
+                        className="rounded-xl border border-slate-100 bg-slate-50/50 p-4"
+                      >
+                        <p className="text-sm font-semibold text-slate-700 mb-1">{label}</p>
+                        {sub.ai_score != null && (
+                          <p className="text-xs text-slate-500 mb-2">Score: {sub.ai_score}%</p>
+                        )}
+                        {sub.ai_feedback && (
+                          <p className="text-slate-700 text-[14px] leading-relaxed whitespace-pre-wrap">
+                            {sub.ai_feedback}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
           <div className="lg:col-span-7 flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden relative">
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0 flex-wrap gap-2">
               <span className="font-semibold text-slate-700">Your Workspace</span>
+              {isGraded && attempt?.ai_score != null && (
+                <span
+                  className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                    status === "passed"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  Your grade: {attempt.ai_score}%
+                </span>
+              )}
             </div>
 
             <div className="flex-1 p-0 relative">
@@ -296,21 +374,44 @@ export default function TicketView() {
                   : "Waiting for input..."}
               </p>
               <div className="flex items-center gap-2">
-                {isSubmittedPending && (
+                {isGraded && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={handleGradeWithAI}
-                    disabled={gradeMutation.isPending}
+                    onClick={handleRestartTicket}
+                    disabled={startNewAttemptMutation.isPending}
                   >
-                    {gradeMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {startNewAttemptMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Restarting...
+                      </>
                     ) : (
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      "Restart ticket"
                     )}
-                    Grade with AI
                   </Button>
+                )}
+                {isSubmittedPending && (
+                  <>
+                    {isAutoGrading || gradeMutation.isPending ? (
+                      <span className="text-sm text-slate-500 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {isAutoGrading ? "Grading your submission…" : "Grading…"}
+                      </span>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGradeWithAI}
+                        disabled={gradeMutation.isPending}
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Grade with AI
+                      </Button>
+                    )}
+                  </>
                 )}
                 {status === "in_progress" && (
                   <Button
@@ -324,7 +425,8 @@ export default function TicketView() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-4 h-4 mr-2" /> Submit Work
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        {hasAttemptedBefore ? "Reattempt" : "Submit Work"}
                       </>
                     )}
                   </Button>
@@ -346,17 +448,34 @@ export default function TicketView() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
+            {isGraded && attempt?.ai_score != null && (
+              <p className="text-lg font-bold text-slate-800 mb-3">
+                Your grade: {attempt.ai_score}%
+              </p>
+            )}
             <p className="text-slate-500 mb-6 text-[15px]">
-              Your solution has been recorded. Use &quot;Grade with AI&quot; on this page to get feedback, or wait for instructor review.
+              {isGraded
+                ? "Your solution has been submitted and graded. Choose \"Review feedback\" to see your feedback on this page, or \"Back to course\" when done."
+                : "Your solution has been recorded. Use \"Grade with AI\" on this page to get feedback, or wait for instructor review."}
             </p>
           </div>
-          <DialogFooter className="sm:justify-center">
+          <DialogFooter className="sm:justify-center flex-col-reverse sm:flex-row gap-2">
+            {isGraded && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleNext}
+                className="w-full sm:w-auto"
+              >
+                Back to course <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
             <Button
               size="lg"
-              onClick={handleNext}
+              onClick={isGraded ? handleReviewFeedback : handleNext}
               className="w-full sm:w-auto shadow-lg shadow-primary/20"
             >
-              Back to course <ArrowRight className="w-4 h-4 ml-2" />
+              {isGraded ? "Review feedback" : <>Back to course <ArrowRight className="w-4 h-4 ml-2" /></>}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -215,7 +215,9 @@ export default function CourseDetail() {
                               <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 w-full justify-center">Completed</Badge>
                             ) : ticket.status === 'Active' ? (
                               <Button asChild size="sm" className="w-full sm:w-auto shadow-md shadow-primary/20">
-                                <Link href={`/courses/${course.id}/ticket/${ticket.id}`}>Start Ticket</Link>
+                                <Link href={`/courses/${course.id}/ticket/${ticket.id}`}>
+                                  {ticket.hasAttemptedBefore ? "Continue" : "Start Ticket"}
+                                </Link>
                               </Button>
                             ) : (
                               <Button disabled variant="outline" size="sm" className="w-full sm:w-auto">Locked</Button>
@@ -241,6 +243,7 @@ export default function CourseDetail() {
         variant="student"
         courseTitle={course.title}
         startTicketHref={selectedTicketId ? `/courses/${course.id}/ticket/${selectedTicketId}` : null}
+        startTicketLabel={course.sprints.flatMap(s => s.tickets).find(t => t.id === selectedTicketId)?.hasAttemptedBefore ? "Continue" : "Start Ticket"}
       />
     </MainLayout>
   );

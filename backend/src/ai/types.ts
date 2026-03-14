@@ -82,5 +82,9 @@ export interface GradingContext {
     deliverableId: string;
     content: string;
   }[];
+  /** Attempt-level code submission (for coding tickets). */
+  submissionCode?: string | null;
+  /** Attempt-level report/notes (e.g. from ticket_attempts.submission_text). */
+  submissionText?: string | null;
 }
 
