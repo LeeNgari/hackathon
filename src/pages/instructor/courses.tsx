@@ -6,10 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useInstructorCourses } from "@/hooks/use-app-data";
-
 export default function InstructorCourses() {
-  const { data: instructorCourses = [], isLoading } = useInstructorCourses();
+  const instructorCourses: { id: string; title: string; category: string; difficulty: string; status: string; studentsEnrolled: number; sprints: number; tickets: number; completionRate: number; avgRating: number; earnedToDate: number; companyPartner: string | null }[] = [];
+  const isLoading = false;
   return (
     <InstructorLayout>
       <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">

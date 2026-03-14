@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Flame, Trophy, Calendar, CheckCircle2, TrendingUp, Zap } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
-import { useUser, useStreakRecords } from "@/hooks/use-app-data";
+import { useUser } from "@/hooks/use-app-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +23,7 @@ function buildHeatmapFromStreakRecords(records: { date: string; tickets_complete
 
 export default function Streaks() {
   const { data: user, isLoading } = useUser();
-  const { data: streakRecords = [], isLoading: streakRecordsLoading } = useStreakRecords();
-  const heatmapData = buildHeatmapFromStreakRecords(streakRecords);
+  const heatmapData = buildHeatmapFromStreakRecords([]);
 
   if (isLoading || !user) {
     return (

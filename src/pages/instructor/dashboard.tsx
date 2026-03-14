@@ -7,22 +7,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
-import { instructorUser, instructorCourses, studentEnrollments, ticketPerformance } from "@/lib/instructor-data";
 
 const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } };
 const itemVariants = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 280, damping: 24 } } };
 
+const defaultInstructorName = "Instructor";
+const defaultTitle = "Course Lead";
+const defaultInstitution = "—";
+
 export default function InstructorDashboard() {
   const { user: authUser } = useAuth();
-  const liveCourse = instructorCourses.find(c => c.status === "Live");
+  const instructorCourses: { id: string; title: string; status: string; studentsEnrolled: number; completionRate: number; earnedToDate: number; companyPartner: string | null }[] = [];
+  const studentEnrollments: { name: string; progress: number; lastTicket: string; lastActivity: string; status: string }[] = [];
+  const ticketPerformance: { title: string; passRate: number; attempts: number }[] = [];
+
+  const liveCourse = instructorCourses.find((c: { status: string }) => c.status === "Live");
   const atRiskStudents = studentEnrollments.filter(s => s.status === "At Risk");
   const weakestTicket = [...ticketPerformance].sort((a, b) => a.passRate - b.passRate)[0];
 
+  const displayName = authUser?.user_metadata?.full_name?.split(" ")[0] || defaultInstructorName.split(" ")[0];
   const statCards = [
     { label: "Total Students", value: liveCourse?.studentsEnrolled.toLocaleString() ?? "0", icon: Users, color: "bg-blue-100 text-blue-600", accent: "bg-blue-500" },
-    { label: "Active Courses", value: instructorCourses.filter(c => c.status === "Live").length, icon: BookOpen, color: "bg-purple-100 text-purple-600", accent: "bg-purple-500" },
-    { label: "Total Earned", value: `KES ${(instructorUser.totalEarned / 1000).toFixed(0)}K`, icon: Wallet, color: "bg-emerald-100 text-emerald-600", accent: "bg-emerald-500" },
-    { label: "Pending Payout", value: `KES ${instructorUser.pendingPayout.toLocaleString()}`, icon: TrendingUp, color: "bg-amber-100 text-amber-600", accent: "bg-amber-500" },
+    { label: "Active Courses", value: instructorCourses.filter((c: { status: string }) => c.status === "Live").length, icon: BookOpen, color: "bg-purple-100 text-purple-600", accent: "bg-purple-500" },
+    { label: "Total Earned", value: "KES 0K", icon: Wallet, color: "bg-emerald-100 text-emerald-600", accent: "bg-emerald-500" },
+    { label: "Pending Payout", value: "KES 0", icon: TrendingUp, color: "bg-amber-100 text-amber-600", accent: "bg-amber-500" },
   ];
 
   return (
@@ -31,8 +39,8 @@ export default function InstructorDashboard() {
 
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-slate-900 tracking-tight">Welcome back, {authUser?.user_metadata?.full_name?.split(" ")[0] || instructorUser.name.split(" ")[0]}</h1>
-            <p className="text-slate-500 mt-1">{instructorUser.title} · {instructorUser.institution}</p>
+            <h1 className="text-3xl font-display font-bold text-slate-900 tracking-tight">Welcome back, {displayName}</h1>
+            <p className="text-slate-500 mt-1">{defaultTitle} · {defaultInstitution}</p>
           </div>
           <div className="text-sm font-medium text-slate-500 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm inline-flex items-center">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}

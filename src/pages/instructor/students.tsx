@@ -7,18 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { useInstructorStudentEnrollments } from "@/hooks/use-app-data";
-
 const statusConfig = {
   "On Track": "bg-emerald-100 text-emerald-700 border-emerald-100",
   "At Risk": "bg-red-100 text-red-700 border-red-100",
   "Completed": "bg-blue-100 text-blue-700 border-blue-100",
 };
 
+type Enrollment = { name: string; course: string; progress: number; streak: number; lastTicket: string; lastActivity: string; status: "On Track" | "At Risk" | "Completed" };
+
 export default function InstructorStudents() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const { data: studentEnrollments = [] } = useInstructorStudentEnrollments();
+  const studentEnrollments: Enrollment[] = [];
 
   const filtered = studentEnrollments.filter(s => {
     if (statusFilter !== "All" && s.status !== statusFilter) return false;
