@@ -15,6 +15,12 @@ export interface Ticket {
   deliverables?: string[];
   /** True when the user has at least one attempt (any status) for this ticket */
   hasAttemptedBefore?: boolean;
+  /** Lesson narrative (HTML); from ticket_scenarios.scenario_text */
+  lessonContent?: string;
+  /** Pre-filled code for coding challenges; from ticket_scenarios.starter_code */
+  starterCode?: string;
+  /** Expected output for validation; from ticket_scenarios.expected_outcome */
+  expectedOutput?: string;
 }
 
 export interface Sprint {

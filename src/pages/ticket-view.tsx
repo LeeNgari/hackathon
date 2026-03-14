@@ -132,14 +132,24 @@ export default function TicketView() {
           
           <div className="p-6 md:p-8 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
             {ticket.lessonContent ? (
-              <div className="prose prose-slate prose-h1:text-2xl prose-h1:font-display prose-h1:font-bold prose-h1:mb-3 prose-p:text-[15px] prose-p:leading-relaxed prose-a:text-blue-600 prose-code:bg-slate-100 prose-code:text-rose-600 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[13px] prose-code:font-mono max-w-none" dangerouslySetInnerHTML={{ __html: ticket.lessonContent }} />
+              <>
+                <div className="prose prose-slate prose-h1:text-2xl prose-h1:font-display prose-h1:font-bold prose-h1:mb-3 prose-p:text-[15px] prose-p:leading-relaxed prose-a:text-blue-600 prose-code:bg-slate-100 prose-code:text-rose-600 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[13px] prose-code:font-mono max-w-none" dangerouslySetInnerHTML={{ __html: ticket.lessonContent }} />
+                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mt-8 mb-4">Required Deliverables</h2>
+                <ul className="space-y-3">
+                  {(ticket.deliverables || ["Implement the requested feature", "Verify code compiles without errors"]).map((item, idx) => (
+                    <li key={idx} className="flex gap-3 text-[15px] text-slate-700">
+                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
               <div>
                 <h1 className="text-2xl font-display font-bold mb-4">{ticket.title}</h1>
                 <p className="text-slate-600 text-[15px] leading-relaxed">
                   {ticket.scenario || "A standard operational request has been assigned to you. Review the required deliverables and submit your structured work."}
                 </p>
-                
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mt-8 mb-4">Required Deliverables</h2>
                 <ul className="space-y-3">
                   {(ticket.deliverables || ["Implement the requested feature", "Verify code compiles without errors"]).map((item, idx) => (
