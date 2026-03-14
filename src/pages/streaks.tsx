@@ -6,34 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
+function buildHeatmapFromStreakRecords(records: { date: string; tickets_completed: number }[]) {
+  const byDate = new Map(records.map((r) => [r.date, r.tickets_completed]));
+  const today = new Date();
+  const data: { date: Date; intensity: number }[] = [];
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const count = byDate.get(dateStr) ?? 0;
+    const intensity = count >= 2 ? 2 : count >= 1 ? 1 : 0;
+    data.push({ date: d, intensity });
+  }
+  return data;
+}
+
 export default function Streaks() {
   const { data: user, isLoading } = useUser();
-
-  // Generate mock heatmap data (90 days)
-  const generateHeatmap = () => {
-    const data = [];
-    const today = new Date();
-    // Simulate streak logic (last 12 days active, random before that)
-    for (let i = 89; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      let intensity = 0; // 0 = none, 1 = low, 2 = high
-      if (i < 12) {
-        intensity = Math.random() > 0.3 ? 2 : 1; // Current streak is 12 days
-      } else {
-        intensity = Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : 1) : 0;
-      }
-      
-      data.push({
-        date,
-        intensity
-      });
-    }
-    return data;
-  };
-
-  const heatmapData = generateHeatmap();
+  const heatmapData = buildHeatmapFromStreakRecords([]);
 
   if (isLoading || !user) {
     return (

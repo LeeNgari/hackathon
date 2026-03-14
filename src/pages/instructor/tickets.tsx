@@ -4,7 +4,7 @@ import { InstructorLayout } from "@/components/layout/instructor-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ticketPerformance } from "@/lib/instructor-data";
+import { useInstructorTicketPerformance } from "@/hooks/use-app-data";
 
 const typeColors: Record<string, string> = {
   Build: "bg-blue-100 text-blue-700 border-blue-100",
@@ -14,9 +14,14 @@ const typeColors: Record<string, string> = {
 };
 
 export default function InstructorTickets() {
-  const avgPassRate = Math.round(ticketPerformance.reduce((s, t) => s + t.passRate, 0) / ticketPerformance.length);
+  const { data: ticketPerformance = [] } = useInstructorTicketPerformance();
+  const avgPassRate = ticketPerformance.length > 0
+    ? Math.round(ticketPerformance.reduce((s, t) => s + t.passRate, 0) / ticketPerformance.length)
+    : 0;
   const totalAttempts = ticketPerformance.reduce((s, t) => s + t.attempts, 0);
-  const avgScore = Math.round(ticketPerformance.reduce((s, t) => s + t.avgScore, 0) / ticketPerformance.length);
+  const avgScore = ticketPerformance.length > 0
+    ? Math.round(ticketPerformance.reduce((s, t) => s + t.avgScore, 0) / ticketPerformance.length)
+    : 0;
 
   return (
     <InstructorLayout>
@@ -63,8 +68,8 @@ export default function InstructorTickets() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {ticketPerformance.map(t => (
-                    <tr key={t.title} className="hover:bg-slate-50 transition-colors">
+                  {ticketPerformance.map((t, i) => (
+                    <tr key={`${t.course}-${t.title}-${i}`} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {t.passRate < 75 && <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />}

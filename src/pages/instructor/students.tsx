@@ -7,17 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { studentEnrollments } from "@/lib/instructor-data";
-
 const statusConfig = {
   "On Track": "bg-emerald-100 text-emerald-700 border-emerald-100",
   "At Risk": "bg-red-100 text-red-700 border-red-100",
   "Completed": "bg-blue-100 text-blue-700 border-blue-100",
 };
 
+type Enrollment = { name: string; course: string; progress: number; streak: number; lastTicket: string; lastActivity: string; status: "On Track" | "At Risk" | "Completed" };
+
 export default function InstructorStudents() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const studentEnrollments: Enrollment[] = [];
 
   const filtered = studentEnrollments.filter(s => {
     if (statusFilter !== "All" && s.status !== statusFilter) return false;
@@ -84,8 +85,8 @@ export default function InstructorStudents() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map(s => (
-                  <tr key={s.name} className="hover:bg-slate-50 transition-colors">
+                {filtered.map((s, i) => (
+                  <tr key={`${s.name}-${s.course}-${i}`} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-slate-900">{s.name}</td>
                     <td className="px-6 py-4">
                       <Badge variant="outline" className={`text-xs ${statusConfig[s.status]}`}>{s.status}</Badge>

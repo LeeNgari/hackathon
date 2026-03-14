@@ -3,9 +3,15 @@ import { Wallet, ArrowDownLeft, Clock, CheckCircle2, TrendingUp } from "lucide-r
 import { InstructorLayout } from "@/components/layout/instructor-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { instructorUser, payoutRecords } from "@/lib/instructor-data";
+import { useInstructorProfile, useInstructorPayoutRecords } from "@/hooks/use-app-data";
 
 export default function InstructorEarnings() {
+  const { data: instructorProfile } = useInstructorProfile();
+  const { data: payoutRecords = [] } = useInstructorPayoutRecords();
+
+  const totalEarned = instructorProfile?.totalEarned ?? 0;
+  const pendingPayout = instructorProfile?.pendingPayout ?? 0;
+
   return (
     <InstructorLayout>
       <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">
@@ -24,7 +30,7 @@ export default function InstructorEarnings() {
               </div>
               <div>
                 <p className="text-sm text-slate-500">Total Earned</p>
-                <h3 className="text-2xl font-bold text-emerald-700">KES {instructorUser.totalEarned.toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-emerald-700">KES {totalEarned.toLocaleString()}</h3>
               </div>
             </CardContent>
           </Card>
@@ -36,7 +42,7 @@ export default function InstructorEarnings() {
               </div>
               <div>
                 <p className="text-sm text-slate-500">Pending Payout</p>
-                <h3 className="text-2xl font-bold text-amber-700">KES {instructorUser.pendingPayout.toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-amber-700">KES {pendingPayout.toLocaleString()}</h3>
               </div>
             </CardContent>
           </Card>
@@ -89,7 +95,7 @@ export default function InstructorEarnings() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {payoutRecords.map((record, i) => (
-                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <tr key={`${record.period}-${record.courseName}-${i}`} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-900">{record.period}</td>
                       <td className="px-6 py-4 text-slate-600 max-w-[180px] truncate">{record.courseName}</td>
                       <td className="px-6 py-4 text-right text-slate-600">{record.studentsCompleted}</td>
