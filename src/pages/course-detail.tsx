@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRoute, Link } from "wouter";
 import { motion } from "framer-motion";
 import { CheckCircle2, Lock, PlayCircle, Clock, Check, FileText, ArrowLeft } from "lucide-react";
@@ -19,13 +19,14 @@ export default function CourseDetail() {
   const [, params] = useRoute("/courses/:id");
   const { data: course, isLoading } = useCourse(params?.id || "");
   const [openSprints, setOpenSprints] = useState<string[]>([]);
+  const hasInitializedOpenSprints = useRef(false);
 
   useEffect(() => {
     if (!course) return;
-    if (openSprints.length === 0) {
-      setOpenSprints(course.sprints.map((s) => s.id));
-    }
-  }, [course, openSprints.length]);
+    if (hasInitializedOpenSprints.current) return;
+    setOpenSprints(course.sprints.map((s) => s.id));
+    hasInitializedOpenSprints.current = true;
+  }, [course]);
 
   if (isLoading || !course) {
     return (
